@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS - Next-Gen Mobile Store</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Bcrypt JS for Secure Hashing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '"Cairo"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        dark: {
+                            bg: '#0b0f19',
+                            card: '#111827',
+                            border: '#1f2937',
+                            input: '#1d283a'
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'red-lightning': 'redLightning 1.5s ease-in-out infinite alternate',
+                        'float': 'float 3s ease-in-out infinite',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'slide-up': 'slideUp 0.4s ease-out forwards',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { opacity: 0.6, transform: 'scale(1)' },
+                            '50%': { opacity: 1, transform: 'scale(1.05)' },
+                        },
+                        redLightning: {
+                            '0%': { boxShadow: '0 0 5px #ef4444, 0 0 10px #ef4444', borderColor: '#ef4444' },
+                            '100%': { boxShadow: '0 0 20px #dc2626, 0 0 30px #dc2626', borderColor: '#f87171' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: 0 },
+                            '100%': { opacity: 1 },
+                        },
+                        slideUp: {
+                            '0%': { opacity: 0, transform: 'translateY(20px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: 'Plus Jakarta Sans', 'Cairo', sans-serif;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { inline-size: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-nav {
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-block-end: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glow-effect-hover:hover {
+            box-shadow: 0 0 30px 0px rgba(99, 102, 241, 0.45);
+        }
+
+        .red-glow-card {
+            animation: redLightning 1.5s ease-in-out infinite alternate;
+        }
+
+        .product-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <header class="glass-nav sticky top-0 z-40 w-full transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilters()">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                        <i data-lucide="smartphone" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-white via-gray-200 to-brand-500 bg-clip-text text-transparent">NEXUS</span>
+                        <span class="text-xs block font-medium text-brand-500 tracking-widest uppercase -mt-1">MOBILE EGYPT</span>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex flex-1 max-w-md mx-8 relative">
+                    <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Search iPhone, Galaxy, Pixel, Xiaomi..." 
+                        class="w-full pl-11 pr-4 py-2.5 bg-dark-input/80 border border-gray-700/60 rounded-full text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="handleAdminDashboardClick()" id="adminToggleBtn" 
+                        class="px-3.5 py-2 rounded-xl border border-gray-700/80 bg-gray-800/50 hover:bg-gray-700/60 text-xs sm:text-sm font-semibold text-gray-300 hover:text-white transition-all flex items-center gap-2">
+                        <i data-lucide="shield" class="w-4 h-4 text-brand-500"></i>
+                        <span id="adminBtnText">Admin Dashboard</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="relative overflow-hidden pt-8 pb-12">
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="glass-card rounded-3xl p-6 sm:p-10 border border-white/10 flex flex-col lg:flex-row items-center justify-between gap-8">
+                <div class="max-w-xl text-center lg:text-left">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-500 border border-brand-500/20 mb-4">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Direct Seller Deals • Egypt
+                    </span>
+                    <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight mb-4">
+                        Find Best Smartphone <br><span class="bg-gradient-to-r from-brand-500 via-indigo-300 to-purple-400 bg-clip-text text-transparent">Deals in EGP</span>
+                    </h1>
+                    <p class="text-gray-400 text-sm sm:text-base leading-relaxed mb-6">
+                        Browse premium smartphones with instant discounted rates. Connect directly with sellers through WhatsApp or Telegram for immediate inquiries!
+                    </p>
+                    <div class="flex flex-wrap gap-4 justify-center lg:justify-start">
+                        <a href="#catalog" onclick="filterByOffers(false)" class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-lg shadow-brand-500/30 transition-all flex items-center gap-2">
+                            Browse All Devices
+                        </a>
+                        <a href="#catalog" onclick="filterByOffers(true)" class="px-6 py-3 rounded-xl bg-red-600/80 hover:bg-red-600 text-white text-sm font-semibold border border-red-500 shadow-lg shadow-red-500/30 transition-all flex items-center gap-2">
+                            <i data-lucide="zap" class="w-4 h-4 text-amber-300 fill-amber-300"></i> Discount Offers
+                        </a>
+                    </div>
+                </div>
+
+                <div class="relative w-full max-w-sm flex justify-center">
+                    <div class="relative w-64 h-80 sm:w-72 sm:h-96 rounded-3xl p-4 glass-card border border-white/20 animate-float shadow-2xl flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Top Deal</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
+                                <i data-lucide="zap" class="w-3 h-3 text-red-400"></i> Offer
+                            </span>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=600&q=80" alt="Featured Mobile" class="w-44 h-44 object-contain mx-auto drop-shadow-2xl">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">iPhone 15 Pro Max</h3>
+                            <div class="flex items-center gap-2">
+                                <p class="text-red-400 font-extrabold text-xl">54,000 EGP</p>
+                                <p class="text-xs text-gray-500 line-through">60,000 EGP</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main id="catalog" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        <div id="customerView">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        Device Catalog <span id="productCount" class="text-xs bg-gray-800 text-gray-400 px-2.5 py-1 rounded-full border border-gray-700">0 Items</span>
+                    </h2>
+                    <p class="text-sm text-gray-400">Browse phones or click special discount offers below</p>
+                </div>
+
+                <!-- Navigation Tabs & Manual Price Filter Bar -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="bg-dark-card border border-gray-700 p-1 rounded-xl flex items-center gap-1">
+                        <button id="tabAll" onclick="setOffersTab(false)" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-brand-600 text-white">
+                            All Devices
+                        </button>
+                        <button id="tabOffers" onclick="setOffersTab(true)" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3.5 h-3.5 text-red-500"></i> Hot Offers
+                        </button>
+                    </div>
+
+                    <!-- Manual Price Range Inputs -->
+                    <div class="flex items-center gap-1.5 bg-dark-card border border-gray-700 px-3 py-1.5 rounded-xl">
+                        <span class="text-xs font-bold text-gray-400">EGP:</span>
+                        <input type="number" id="minPriceInput" oninput="applyFilters()" placeholder="من" class="w-16 bg-dark-input border border-gray-700/80 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-500">
+                        <span class="text-xs text-gray-500">-</span>
+                        <input type="number" id="maxPriceInput" oninput="applyFilters()" placeholder="إلى" class="w-16 bg-dark-input border border-gray-700/80 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-500">
+                    </div>
+
+                    <button onclick="resetFilters()" class="p-2.5 rounded-xl border border-gray-700 bg-dark-card hover:bg-gray-800 text-gray-400 hover:text-white transition-all">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+
+            <div id="emptyState" class="hidden text-center py-16 glass-card rounded-3xl border border-gray-800">
+                <i data-lucide="search-x" class="w-16 h-16 text-gray-500 mx-auto mb-4"></i>
+                <h3 class="text-xl font-bold text-white mb-2">No Smartphones Found</h3>
+                <p class="text-gray-400 text-sm max-w-md mx-auto mb-6">No devices found for the selected category or filter criteria.</p>
+                <button onclick="resetFilters()" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition-all">Clear Filters</button>
+            </div>
+        </div>
+
+        <div id="adminView" class="hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-6 h-6 text-brand-500"></i> Admin Product Dashboard
+                    </h2>
+                    <p class="text-sm text-gray-400">Manage listings, upload up to 5 images, or extract posts with AI Assistant.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="openCredentialsModal()" class="px-4 py-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 border border-gray-700 text-gray-200 text-sm font-semibold transition-all flex items-center gap-2">
+                        <i data-lucide="key" class="w-4 h-4 text-brand-500"></i> Credentials
+                    </button>
+                    <button onclick="openProductModal()" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-lg transition-all flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add New Phone
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-gray-800 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-gray-800/80 text-gray-400 uppercase text-xs tracking-wider border-b border-gray-700">
+                            <tr>
+                                <th class="px-6 py-4">Phone</th>
+                                <th class="px-6 py-4">Color</th>
+                                <th class="px-6 py-4">Tax Status</th>
+                                <th class="px-6 py-4">Price (EGP)</th>
+                                <th class="px-6 py-4">Discount Offer</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminProductTable" class="divide-y divide-gray-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Admin Login Modal -->
+    <div id="adminLoginModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full rounded-3xl border border-white/10 p-6 sm:p-8 relative shadow-2xl animate-slide-up">
+            <button onclick="closeAdminLoginModal()" class="absolute top-4 right-4 p-2 rounded-full bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-brand-600/20 border border-brand-500/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="lock" class="w-6 h-6 text-brand-500"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-white">Admin Authentication</h3>
+                <p class="text-xs text-gray-400 mt-1">Protected Dashboard Access</p>
+            </div>
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Username</label>
+                    <input type="text" id="loginUsername" required placeholder="Enter admin username" class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <button type="submit" id="loginSubmitBtn" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i> Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Credentials Modal -->
+    <div id="credentialsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full rounded-3xl border border-white/10 p-6 sm:p-8 relative shadow-2xl animate-slide-up">
+            <button onclick="closeCredentialsModal()" class="absolute top-4 right-4 p-2 rounded-full bg-gray-800/80 text-gray-300 hover:text-white transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="text-center mb-6">
+                <h3 class="text-xl font-extrabold text-white">Update Admin Credentials</h3>
+            </div>
+            <form onsubmit="handleUpdateCredentials(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Current Password</label>
+                    <input type="password" id="currPassword" required class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">New Username</label>
+                    <input type="text" id="newUsername" required class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">New Password</label>
+                    <input type="password" id="newPassword" required class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white">
+                </div>
+                <button type="submit" id="updateCredsBtn" class="w-full py-3 rounded-xl bg-amber-600 text-white font-semibold text-sm">Save Encrypted Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Seller Modal -->
+    <div id="contactSellerModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full rounded-3xl border border-white/10 p-6 relative shadow-2xl animate-slide-up">
+            <button onclick="closeContactModal()" class="absolute top-4 right-4 p-2 rounded-full bg-gray-800/80 text-gray-300 hover:text-white transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-brand-600/20 border border-brand-500/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="message-square" class="w-6 h-6 text-brand-500"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-white">Contact Seller</h3>
+                <p id="contactDeviceTitle" class="text-xs text-brand-400 mt-1 font-semibold"></p>
+            </div>
+
+            <div class="space-y-3">
+                <a id="sellerWhatsappLink" target="_blank" class="w-full py-3 px-4 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 border border-emerald-500 text-white font-semibold text-sm transition-all flex items-center justify-center gap-3">
+                    <i data-lucide="phone-call" class="w-5 h-5"></i> Chat on WhatsApp
+                </a>
+                <a id="sellerTelegramLink" target="_blank" class="w-full py-3 px-4 rounded-xl bg-sky-600/80 hover:bg-sky-600 border border-sky-500 text-white font-semibold text-sm transition-all flex items-center justify-center gap-3">
+                    <i data-lucide="send" class="w-5 h-5"></i> Chat on Telegram
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Detail Modal -->
+    <div id="productDetailModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-3xl w-full rounded-3xl border border-white/10 overflow-hidden relative shadow-2xl animate-slide-up max-h-[90vh] flex flex-col md:flex-row">
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-800/80 text-gray-300 hover:text-white transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="w-full md:w-1/2 bg-gray-900/60 p-6 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r border-gray-800">
+                <img id="detailImage" src="" alt="Phone Detail" class="w-full h-64 md:h-72 object-contain drop-shadow-2xl">
+                <div id="detailThumbnails" class="flex gap-2 mt-4 overflow-x-auto max-w-full py-1"></div>
+            </div>
+
+            <div class="w-full md:w-1/2 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span id="detailTaxBadge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">معفي ضريبة / Zero Fees</span>
+                    </div>
+                    <h2 id="detailTitle" class="text-2xl font-extrabold text-white mt-1 mb-2"></h2>
+                    <div id="detailPriceContainer" class="flex items-baseline gap-2 mb-4"></div>
+                    <p id="detailDescription" class="text-gray-300 text-sm leading-relaxed mb-6"></p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex justify-between text-xs py-1.5 border-b border-gray-800"><span class="text-gray-400">Color / اللون:</span><span id="specColor" class="text-gray-200 font-semibold"></span></div>
+                        <div class="flex justify-between text-xs py-1.5 border-b border-gray-800"><span class="text-gray-400">Storage / المساحة:</span><span id="specStorage" class="text-gray-200 font-semibold"></span></div>
+                    </div>
+                </div>
+                <button id="detailContactBtn" class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i> Contact Seller
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Product Form Modal -->
+    <div id="adminModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-2xl w-full rounded-3xl border border-white/10 p-6 sm:p-8 relative shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+            <button onclick="closeProductModal()" class="absolute top-4 right-4 p-2 rounded-full bg-gray-800/80 text-gray-300 hover:text-white transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            
+            <h3 id="adminModalTitle" class="text-xl font-extrabold text-white mb-4">Add / Edit Smartphone</h3>
+
+            <!-- Multilingual Arabic & English AI Assistant -->
+            <div class="mb-6 p-4 rounded-2xl bg-brand-900/30 border border-brand-500/30">
+                <div class="flex items-center gap-2 mb-2 text-brand-400 font-bold text-xs uppercase tracking-wider">
+                    <i data-lucide="bot" class="w-4 h-4"></i> AI Assistant: Intelligent Post Extractor (عربي / English)
+                </div>
+                <p class="text-xs text-gray-400 mb-3">Paste Arabic or English sales post below to auto-fill fields!</p>
+                <div class="flex gap-2">
+                    <textarea id="aiRawInput" rows="2" placeholder="مثال: ايفون 15 برو ماكس 256 جيجا اسود تيتانيوم للبيع، معفي ضريبة، السعر 54000 بدلا من 60000. واتساب 01000000000" class="w-full px-3 py-2 bg-dark-input border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500"></textarea>
+                    <button type="button" onclick="runAIAssistantExtract()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl flex flex-col items-center justify-center gap-1 shrink-0">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Auto Fill
+                    </button>
+                </div>
+            </div>
+
+            <form id="productForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editProductId">
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Model Title / اسم الجهاز</label>
+                    <input type="text" id="formTitle" required placeholder="e.g. iPhone 15 Pro Max / آيفون 15 برو ماكس" class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Standard Price (EGP)</label>
+                        <input type="number" id="formPrice" required placeholder="45000" class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Color / اللون</label>
+                        <input type="text" id="formColor" required placeholder="e.g. Natural Titanium / أسود تيتانيوم" class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white">
+                    </div>
+                </div>
+
+                <!-- Tax Exemption Checkbox -->
+                <div class="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center gap-2">
+                    <input type="checkbox" id="formIsTaxExempt" class="w-4 h-4 text-emerald-600 rounded bg-dark-input border-gray-700 focus:ring-emerald-500">
+                    <label for="formIsTaxExempt" class="text-xs font-bold text-emerald-400 flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> جهاز معفي من الضريبة (Zero Fees / Tax Exempt)
+                    </label>
+                </div>
+
+                <div class="p-4 rounded-xl bg-red-950/20 border border-red-500/30 space-y-3">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="formHasDiscount" onchange="toggleDiscountInputs(this.checked)" class="w-4 h-4 text-red-600 rounded bg-dark-input border-gray-700 focus:ring-red-500">
+                        <label for="formHasDiscount" class="text-xs font-bold text-red-400 flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> Enable Red Lightning Discount Offer
+                        </label>
+                    </div>
+                    <div id="discountFields" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Discount Price (EGP)</label>
+                            <input type="number" id="formDiscountPrice" placeholder="39000" class="w-full px-4 py-2 bg-dark-input border border-gray-700 rounded-xl text-sm text-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Images (Up to 5 photos)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                        <input type="file" id="formImageFiles" accept="image/*" multiple onchange="handleMultiFileUpload(event)" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-brand-400 hover:file:bg-gray-700 cursor-pointer">
+                        <input type="text" id="formImageUrls" placeholder="Or enter URLs separated by comma" onchange="handleMultiUrlInput(this.value)" class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-xs text-white">
+                    </div>
+                    <div id="multiImagePreviewContainer" class="flex flex-wrap gap-2 pt-2"></div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-gray-900/60 border border-gray-800 space-y-3">
+                    <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Seller Direct Links</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="text" id="formWhatsapp" placeholder="WhatsApp (e.g. 201012345678)" class="w-full px-3 py-2 bg-dark-input border border-gray-700 rounded-xl text-xs text-white">
+                        <input type="text" id="formTelegram" placeholder="Telegram Username / Link" class="w-full px-3 py-2 bg-dark-input border border-gray-700 rounded-xl text-xs text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Storage Options / المساحة</label>
+                    <input type="text" id="formStorage" required placeholder="128GB / 256GB / 512GB" class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Description / الوصف</label>
+                    <textarea id="formDescription" rows="2" required placeholder="Device condition, warranty details / حالة الجهاز، الضمان..." class="w-full px-4 py-2.5 bg-dark-input border border-gray-700 rounded-xl text-sm text-white"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-800">
+                    <button type="button" onclick="closeProductModal()" class="px-5 py-2.5 rounded-xl border border-gray-700 text-gray-300 text-sm font-semibold">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold">Save Device</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="border-t border-gray-800/80 bg-dark-bg/80 py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
+                    <i data-lucide="smartphone" class="w-4 h-4 text-white"></i>
+                </div>
+                <span class="font-extrabold text-white text-sm">NEXUS MOBILE EGYPT</span>
+            </div>
+            
+            <p class="text-xs text-gray-500">© 2026 NEXUS Store. Prices listed in Egyptian Pounds (EGP).</p>
+
+            <div class="flex items-center gap-3">
+                <a href="https://wa.me/201000000000" target="_blank" class="w-9 h-9 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center">
+                    <i data-lucide="phone-call" class="w-4 h-4"></i>
+                </a>
+                <a href="https://t.me/nexus_mobile" target="_blank" class="w-9 h-9 rounded-xl bg-sky-600/20 border border-sky-500/40 text-sky-400 hover:bg-sky-600 hover:text-white transition-all flex items-center justify-center">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const initialProducts = [
+            {
+                id: '1',
+                title: 'iPhone 15 Pro Max',
+                price: 60000,
+                hasDiscount: true,
+                discountPrice: 54000,
+                isTaxExempt: true,
+                color: 'Natural Titanium / أسود تيتانيوم',
+                images: ['https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=600&q=80'],
+                storage: '256GB / 512GB / 1TB',
+                description: 'Titanium design, A17 Pro chip, Action button, and 5x Optical Zoom camera.',
+                whatsapp: '201000000000',
+                telegram: 'nexus_store'
+            },
+            {
+                id: '2',
+                title: 'Samsung Galaxy S24 Ultra',
+                price: 65000,
+                hasDiscount: true,
+                discountPrice: 58500,
+                isTaxExempt: false,
+                color: 'Titanium Black / أسود',
+                images: ['https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=600&q=80'],
+                storage: '256GB / 512GB',
+                description: 'Built-in S Pen stylus with Galaxy AI features and 200MP camera.',
+                whatsapp: '201000000000',
+                telegram: 'nexus_store'
+            }
+        ];
+
+        const BackendServer = {
+            async init() {
+                if (!localStorage.getItem('nexus_admin_user')) {
+                    const defaultHash = dcodeIO.bcrypt.hashSync('admin123', 10);
+                    localStorage.setItem('nexus_admin_user', JSON.stringify({
+                        username: 'admin',
+                        passwordHash: defaultHash
+                    }));
+                }
+            },
+            async login(username, password) {
+                const storedUser = JSON.parse(localStorage.getItem('nexus_admin_user'));
+                if (username !== storedUser.username) return { success: false, message: 'Invalid credentials' };
+                const isPasswordValid = await dcodeIO.bcrypt.compare(password, storedUser.passwordHash);
+                if (!isPasswordValid) return { success: false, message: 'Invalid credentials' };
+                const token = btoa(JSON.stringify({ username: storedUser.username, exp: Date.now() + 7200000 }));
+                sessionStorage.setItem('nexus_admin_token', token);
+                return { success: true, token };
+            },
+            isAuthenticated() {
+                const token = sessionStorage.getItem('nexus_admin_token');
+                if (!token) return false;
+                try {
+                    const parsed = JSON.parse(atob(token));
+                    return parsed.exp > Date.now();
+                } catch (e) {
+                    return false;
+                }
+            },
+            logout() { sessionStorage.removeItem('nexus_admin_token'); },
+            async updateCredentials(currPassword, newUsername, newPassword) {
+                if (!this.isAuthenticated()) return { success: false, message: 'Unauthorized' };
+                const storedUser = JSON.parse(localStorage.getItem('nexus_admin_user'));
+                const isPasswordValid = await dcodeIO.bcrypt.compare(currPassword, storedUser.passwordHash);
+                if (!isPasswordValid) return { success: false, message: 'Current password incorrect' };
+                const newHash = await dcodeIO.bcrypt.hash(newPassword, 10);
+                localStorage.setItem('nexus_admin_user', JSON.stringify({ username: newUsername, passwordHash: newHash }));
+                return { success: true };
+            }
+        };
+
+        let products = JSON.parse(localStorage.getItem('nexus_products')) || initialProducts;
+        let currentView = 'customer';
+        let searchQuery = '';
+        let showOnlyOffers = false;
+        let activeUploadedImages = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await BackendServer.init();
+            renderProducts();
+            lucide.createIcons();
+        });
+
+        function saveProducts() {
+            localStorage.setItem('nexus_products', JSON.stringify(products));
+        }
+
+        function setOffersTab(offersOnly) {
+            showOnlyOffers = offersOnly;
+            const tabAll = document.getElementById('tabAll');
+            const tabOffers = document.getElementById('tabOffers');
+
+            if (offersOnly) {
+                tabOffers.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-red-600 text-white flex items-center gap-1 shadow-lg shadow-red-500/30";
+                tabAll.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white";
+            } else {
+                tabAll.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-brand-600 text-white";
+                tabOffers.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white flex items-center gap-1";
+            }
+            renderProducts();
+        }
+
+        function filterByOffers(offersOnly) { setOffersTab(offersOnly); }
+
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const emptyState = document.getElementById('emptyState');
+            const countElem = document.getElementById('productCount');
+            
+            const minPriceVal = parseFloat(document.getElementById('minPriceInput').value);
+            const maxPriceVal = parseFloat(document.getElementById('maxPriceInput').value);
+
+            let filtered = products.filter(p => {
+                const currentPrice = p.hasDiscount && p.discountPrice > 0 ? p.discountPrice : p.price;
+                
+                let matchesPrice = true;
+                if (!isNaN(minPriceVal)) matchesPrice = matchesPrice && currentPrice >= minPriceVal;
+                if (!isNaN(maxPriceVal)) matchesPrice = matchesPrice && currentPrice <= maxPriceVal;
+
+                const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      (p.color && p.color.toLowerCase().includes(searchQuery.toLowerCase()));
+                const matchesOffers = !showOnlyOffers || (p.hasDiscount && p.discountPrice > 0);
+                
+                return matchesSearch && matchesOffers && matchesPrice;
+            });
+
+            countElem.innerText = `${filtered.length} Items`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(p => {
+                const isDiscount = p.hasDiscount && p.discountPrice > 0;
+                const cardGlowClass = isDiscount ? 'red-glow-card' : 'glow-effect-hover';
+                const mainImg = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '');
+
+                return `
+                <div class="product-card glass-card rounded-2xl p-5 border border-white/5 flex flex-col justify-between group ${cardGlowClass}">
+                    <div>
+                        <div class="relative w-full h-48 bg-gray-900/40 rounded-xl p-4 mb-4 flex items-center justify-center overflow-hidden">
+                            ${isDiscount ? `
+                                <span class="absolute top-2 left-2 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-red-600 text-white shadow-lg flex items-center gap-1 animate-pulse">
+                                    <i data-lucide="zap" class="w-3 h-3 fill-amber-300 text-amber-300"></i> Hot Deal
+                                </span>
+                            ` : ''}
+                            ${p.isTaxExempt ? `
+                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                                    Zero Fees / معفي
+                                </span>
+                            ` : ''}
+                            <img src="${mainImg}" alt="${p.title}" class="h-36 object-contain group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80'">
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-brand-500 transition-colors">${p.title}</h3>
+                        <div class="text-xs text-brand-400 font-semibold my-1">${p.color || ''}</div>
+                        <p class="text-xs text-gray-400 line-clamp-2 mt-1 mb-3">${p.description}</p>
+                    </div>
+                    <div>
+                        <div class="flex items-baseline justify-between mb-4">
+                            <div>
+                                ${isDiscount ? `
+                                    <span class="text-xl font-extrabold text-red-400">${p.discountPrice.toLocaleString()} EGP</span>
+                                    <span class="text-xs text-gray-500 line-through block">${p.price.toLocaleString()} EGP</span>
+                                ` : `
+                                    <span class="text-xl font-extrabold text-white">${p.price.toLocaleString()} EGP</span>
+                                `}
+                            </div>
+                            <span class="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">${p.storage || ''}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openDetailModal('${p.id}')" class="flex-1 py-2.5 rounded-xl border border-gray-700 hover:border-gray-600 bg-gray-800/50 hover:bg-gray-800 text-xs font-semibold text-gray-300 transition-all flex items-center justify-center gap-1.5">
+                                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Details
+                            </button>
+                            <button onclick="openContactSellerModal('${p.id}')" class="flex-1 py-2.5 rounded-xl ${isDiscount ? 'bg-red-600 hover:bg-red-500' : 'bg-brand-600 hover:bg-brand-500'} text-white text-xs font-semibold shadow-md transition-all flex items-center justify-center gap-1">
+                                <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Contact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderAdminTable() {
+            const tableBody = document.getElementById('adminProductTable');
+            tableBody.innerHTML = products.map(p => {
+                const mainImg = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '');
+                return `
+                <tr class="hover:bg-gray-800/40 transition-colors">
+                    <td class="px-6 py-4 flex items-center gap-3">
+                        <img src="${mainImg}" class="w-10 h-10 object-contain rounded bg-gray-900 p-1">
+                        <div>
+                            <div class="font-bold text-white">${p.title}</div>
+                            <div class="text-xs text-gray-400">${p.storage || ''}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-gray-300">${p.color || '-'}</td>
+                    <td class="px-6 py-4">
+                        ${p.isTaxExempt ? `<span class="text-xs font-bold px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg border border-emerald-500/30">معفي / Zero Fees</span>` : `<span class="text-xs text-gray-500">غير معفي</span>`}
+                    </td>
+                    <td class="px-6 py-4 font-bold text-white">${p.price.toLocaleString()} EGP</td>
+                    <td class="px-6 py-4">
+                        ${p.hasDiscount ? `<span class="text-xs font-bold px-2 py-1 bg-red-500/20 text-red-400 rounded-lg border border-red-500/30">${p.discountPrice.toLocaleString()} EGP</span>` : `<span class="text-xs text-gray-500">None</span>`}
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="editProduct('${p.id}')" class="p-2 rounded-lg bg-gray-800 hover:bg-brand-600 text-gray-300 hover:text-white transition-all">
+                            <i data-lucide="edit" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="deleteProduct('${p.id}')" class="p-2 rounded-lg bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white transition-all">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+
+            lucide.createIcons();
+        }
+
+        function openContactSellerModal(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            document.getElementById('contactDeviceTitle').innerText = `${product.title} (${product.hasDiscount ? product.discountPrice : product.price} EGP)`;
+
+            const encodedMsg = encodeURIComponent(`Hello, I am inquiring about buying the ${product.title} listed for ${product.hasDiscount ? product.discountPrice : product.price} EGP.`);
+            
+            const waNum = product.whatsapp ? product.whatsapp.replace(/[^0-9]/g, '') : '201000000000';
+            document.getElementById('sellerWhatsappLink').href = `https://wa.me/${waNum}?text=${encodedMsg}`;
+            
+            const tgUser = product.telegram ? product.telegram.replace('@', '') : 'nexus_mobile';
+            document.getElementById('sellerTelegramLink').href = `https://t.me/${tgUser}`;
+
+            document.getElementById('contactSellerModal').classList.remove('hidden');
+        }
+
+        function closeContactModal() { document.getElementById('contactSellerModal').classList.add('hidden'); }
+
+        function handleMultiFileUpload(event) {
+            const files = Array.from(event.target.files).slice(0, 5 - activeUploadedImages.length);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (activeUploadedImages.length < 5) {
+                        activeUploadedImages.push(e.target.result);
+                        renderImagePreviews();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function handleMultiUrlInput(val) {
+            if (!val) return;
+            const urls = val.split(',').map(u => u.trim()).filter(u => u);
+            urls.forEach(url => {
+                if (activeUploadedImages.length < 5) {
+                    activeUploadedImages.push(url);
+                }
+            });
+            renderImagePreviews();
+        }
+
+        function removeImage(index) {
+            activeUploadedImages.splice(index, 1);
+            renderImagePreviews();
+        }
+
+        function renderImagePreviews() {
+            const container = document.getElementById('multiImagePreviewContainer');
+            container.innerHTML = activeUploadedImages.map((src, idx) => `
+                <div class="relative w-16 h-16 rounded-lg bg-gray-900 border border-gray-700 overflow-hidden">
+                    <img src="${src}" class="w-full h-full object-contain">
+                    <button type="button" onclick="removeImage(${idx})" class="absolute top-0 right-0 bg-red-600 text-white rounded-bl p-0.5 text-xs">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function toggleDiscountInputs(enabled) {
+            const fields = document.getElementById('discountFields');
+            if (enabled) fields.classList.remove('hidden');
+            else fields.classList.add('hidden');
+        }
+
+        function runAIAssistantExtract() {
+            const text = document.getElementById('aiRawInput').value;
+            if (!text) {
+                showToast('الرجاء إدخال نص المنشور أولاً!', 'error');
+                return;
+            }
+
+            const titleMatch = text.match(/(iphone\s+[0-9]+\s*(pro\s*max|pro|plus)?|آيفون\s+[0-9]+\s*(برو\s*ماكس|برو|بلس)?|سامسونج\s+جلاكسي\s+[a-z0-9\sأ-ي]+|samsung\s+galaxy\s+[a-z0-9\s]+|شاومي\s+[a-z0-9\sأ-ي]+|xiaomi\s+[a-z0-9\s]+|بكسل\s+[0-9]+|pixel\s+[0-9]+)/i);
+            if (titleMatch) document.getElementById('formTitle').value = titleMatch[0].trim();
+
+            const prices = text.match(/\b\d{4,6}\b/g);
+            if (prices) {
+                const nums = prices.map(Number).sort((a,b) => b-a);
+                if (nums.length >= 2) {
+                    document.getElementById('formPrice').value = nums[0];
+                    document.getElementById('formHasDiscount').checked = true;
+                    toggleDiscountInputs(true);
+                    document.getElementById('formDiscountPrice').value = nums[1];
+                } else if (nums.length === 1) {
+                    document.getElementById('formPrice').value = nums[0];
+                }
+            }
+
+            if (/معفي|بدون ضريبة|zero fees|tax exempt|بدون جمارك/i.test(text)) {
+                document.getElementById('formIsTaxExempt').checked = true;
+            }
+
+            const colorMatch = text.match(/(اسود|أسود|أبيض|ابيض|تيتانيوم|أزرق|ازرق|ذهبي|رمادي|كحلي|تيتانيوم طبيعي|natural titanium|black|white|blue|gold|grey)/i);
+            if (colorMatch) document.getElementById('formColor').value = colorMatch[0].trim();
+
+            const storageMatch = text.match(/(128|256|512|1TB|١٢٨|٢٥٦|٥١٢)\s*(جيجا|جيجابايت|GB|تيرابايت)/i);
+            if (storageMatch) document.getElementById('formStorage').value = storageMatch[0].trim();
+
+            const waMatch = text.match(/(20\d{10}|01\d{9}|\d{11})/);
+            if (waMatch) document.getElementById('formWhatsapp').value = waMatch[0];
+
+            const tgMatch = text.match(/@([a-zA-Z0-9_]+)/);
+            if (tgMatch) document.getElementById('formTelegram').value = tgMatch[1];
+
+            showToast('تم استخراج البيانات وتعبئة الحقول بنجاح!', 'success');
+        }
+
+        function handleAdminDashboardClick() {
+            if (currentView === 'admin') {
+                BackendServer.logout();
+                currentView = 'customer';
+                document.getElementById('adminView').classList.add('hidden');
+                document.getElementById('customerView').classList.remove('hidden');
+                document.getElementById('adminBtnText').innerText = 'Admin Dashboard';
+                showToast('Logged out');
+                renderProducts();
+            } else {
+                if (BackendServer.isAuthenticated()) showAdminView();
+                else openAdminLoginModal();
+            }
+        }
+
+        function showAdminView() {
+            currentView = 'admin';
+            document.getElementById('customerView').classList.add('hidden');
+            document.getElementById('adminView').classList.remove('hidden');
+            document.getElementById('adminBtnText').innerText = 'Logout Admin';
+            renderAdminTable();
+        }
+
+        function openAdminLoginModal() {
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('adminLoginModal').classList.remove('hidden');
+        }
+
+        function closeAdminLoginModal() { document.getElementById('adminLoginModal').classList.add('hidden'); }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('loginUsername').value;
+            const pass = document.getElementById('loginPassword').value;
+
+            const result = await BackendServer.login(user, pass);
+            if (result.success) {
+                closeAdminLoginModal();
+                showAdminView();
+                showToast('Authenticated!', 'success');
+            } else {
+                showToast(result.message, 'error');
+            }
+        }
+
+        function openCredentialsModal() {
+            document.getElementById('currPassword').value = '';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('credentialsModal').classList.remove('hidden');
+        }
+
+        function closeCredentialsModal() { document.getElementById('credentialsModal').classList.add('hidden'); }
+
+        async function handleUpdateCredentials(e) {
+            e.preventDefault();
+            const currPass = document.getElementById('currPassword').value;
+            const newUser = document.getElementById('newUsername').value;
+            const newPass = document.getElementById('newPassword').value;
+
+            const res = await BackendServer.updateCredentials(currPass, newUser, newPass);
+            if (res.success) {
+                closeCredentialsModal();
+                showToast('Credentials updated!', 'success');
+            } else {
+                showToast(res.message, 'error');
+            }
+        }
+
+        function handleSearch(val) { searchQuery = val; renderProducts(); }
+        function applyFilters() { renderProducts(); }
+
+        function resetFilters() {
+            document.getElementById('minPriceInput').value = '';
+            document.getElementById('maxPriceInput').value = '';
+            document.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+            searchQuery = '';
+            setOffersTab(false);
+            showToast('Filters reset');
+        }
+
+        function openDetailModal(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            const imgs = product.images && product.images.length > 0 ? product.images : [product.image || ''];
+            
+            const detailImg = document.getElementById('detailImage');
+            detailImg.src = imgs[0];
+
+            const thumbsContainer = document.getElementById('detailThumbnails');
+            thumbsContainer.innerHTML = imgs.map((src, i) => `
+                <img src="${src}" onclick="document.getElementById('detailImage').src='${src}'" class="w-12 h-12 object-contain rounded-lg bg-gray-800 border border-gray-700 cursor-pointer hover:border-brand-500">
+            `).join('');
+
+            const taxBadge = document.getElementById('detailTaxBadge');
+            if (product.isTaxExempt) taxBadge.classList.remove('hidden');
+            else taxBadge.classList.add('hidden');
+
+            document.getElementById('detailTitle').innerText = product.title;
+            
+            const priceContainer = document.getElementById('detailPriceContainer');
+            if (product.hasDiscount && product.discountPrice > 0) {
+                priceContainer.innerHTML = `
+                    <span class="text-2xl font-extrabold text-red-400">${product.discountPrice.toLocaleString()} EGP</span>
+                    <span class="text-sm text-gray-500 line-through">${product.price.toLocaleString()} EGP</span>
+                `;
+            } else {
+                priceContainer.innerHTML = `<span class="text-2xl font-extrabold text-white">${product.price.toLocaleString()} EGP</span>`;
+            }
+
+            document.getElementById('detailDescription').innerText = product.description;
+            document.getElementById('specColor').innerText = product.color || '-';
+            document.getElementById('specStorage').innerText = product.storage || '-';
+
+            const contactBtn = document.getElementById('detailContactBtn');
+            contactBtn.onclick = () => { closeDetailModal(); openContactSellerModal(product.id); };
+
+            document.getElementById('productDetailModal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() { document.getElementById('productDetailModal').classList.add('hidden'); }
+
+        function openProductModal(productId = null) {
+            if (!BackendServer.isAuthenticated()) return;
+            const modal = document.getElementById('adminModal');
+            const form = document.getElementById('productForm');
+            const titleElem = document.getElementById('adminModalTitle');
+
+            form.reset();
+            activeUploadedImages = [];
+            renderImagePreviews();
+            toggleDiscountInputs(false);
+
+            if (productId) {
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    titleElem.innerText = 'Edit Smartphone';
+                    document.getElementById('editProductId').value = product.id;
+                    document.getElementById('formTitle').value = product.title;
+                    document.getElementById('formPrice').value = product.price;
+                    document.getElementById('formColor').value = product.color || '';
+                    document.getElementById('formIsTaxExempt').checked = !!product.isTaxExempt;
+                    document.getElementById('formHasDiscount').checked = !!product.hasDiscount;
+                    toggleDiscountInputs(!!product.hasDiscount);
+                    document.getElementById('formDiscountPrice').value = product.discountPrice || '';
+                    
+                    activeUploadedImages = product.images && product.images.length > 0 ? [...product.images] : [product.image];
+                    renderImagePreviews();
+
+                    document.getElementById('formWhatsapp').value = product.whatsapp || '';
+                    document.getElementById('formTelegram').value = product.telegram || '';
+                    document.getElementById('formStorage').value = product.storage || '';
+                    document.getElementById('formDescription').value = product.description || '';
+                }
+            } else {
+                titleElem.innerText = 'Add New Smartphone';
+                document.getElementById('editProductId').value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeProductModal() { document.getElementById('adminModal').classList.add('hidden'); }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            if (!BackendServer.isAuthenticated()) return;
+
+            const editId = document.getElementById('editProductId').value;
+            const hasDiscount = document.getElementById('formHasDiscount').checked;
+            
+            const finalImages = activeUploadedImages.length > 0 ? activeUploadedImages : ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80'];
+
+            const productData = {
+                id: editId || Date.now().toString(),
+                title: document.getElementById('formTitle').value,
+                price: parseFloat(document.getElementById('formPrice').value),
+                color: document.getElementById('formColor').value,
+                isTaxExempt: document.getElementById('formIsTaxExempt').checked,
+                hasDiscount: hasDiscount,
+                discountPrice: hasDiscount ? parseFloat(document.getElementById('formDiscountPrice').value || 0) : 0,
+                images: finalImages,
+                whatsapp: document.getElementById('formWhatsapp').value,
+                telegram: document.getElementById('formTelegram').value,
+                storage: document.getElementById('formStorage').value,
+                description: document.getElementById('formDescription').value
+            };
+
+            if (editId) {
+                const index = products.findIndex(p => p.id === editId);
+                if (index !== -1) {
+                    products[index] = productData;
+                }
+                showToast('Device updated!');
+            } else {
+                products.unshift(productData);
+                showToast('Device added to catalog!');
+            }
+
+            saveProducts();
+            closeProductModal();
+            renderAdminTable();
+            renderProducts();
+        }
+
+        function editProduct(id) { openProductModal(id); }
+
+        function deleteProduct(id) {
+            if (!BackendServer.isAuthenticated()) return;
+            if (confirm('Remove device listing?')) {
+                products = products.filter(p => p.id !== id);
+                saveProducts();
+                renderAdminTable();
+                renderProducts();
+                showToast('Listing removed', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-emerald-600' : 'bg-brand-600';
+            toast.className = `pointer-events-auto ${bgColor} text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-fade-in transition-all duration-300`;
+            toast.innerHTML = `<i data-lucide="info" class="w-4 h-4"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
